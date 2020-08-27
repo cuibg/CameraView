@@ -2,9 +2,7 @@ package com.otaliastudios.cameraview.picture;
 
 import android.hardware.Camera;
 
-import androidx.annotation.NonNull;
-import androidx.exifinterface.media.ExifInterface;
-
+import com.otaliastudios.cameraview.CameraException;
 import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.engine.Camera1Engine;
 import com.otaliastudios.cameraview.engine.offset.Reference;
@@ -14,6 +12,9 @@ import com.otaliastudios.cameraview.size.Size;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+
+import androidx.annotation.NonNull;
+import androidx.exifinterface.media.ExifInterface;
 
 /**
  * A {@link PictureResult} that uses standard APIs.
@@ -88,7 +89,11 @@ public class Full1PictureRecorder extends FullPictureRecorder {
                                     previewStreamSize,
                                     mEngine.getAngles()
                             );
-                            camera.startPreview();
+                            try {
+                                camera.startPreview();
+                            } catch (Exception e) {
+                                throw new CameraException(e, CameraException.REASON_FAILED_TO_START_PREVIEW);
+                            }
                         }
                         dispatchResult();
                     }
