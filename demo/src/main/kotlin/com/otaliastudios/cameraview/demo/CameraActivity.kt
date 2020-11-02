@@ -32,8 +32,8 @@ class CameraActivity : AppCompatActivity(), View.OnClickListener, OptionView.Cal
         private const val DECODE_BITMAP = false
     }
 
-    private val camera: CameraView by lazy { findViewById(R.id.camera) }
-    private val controlPanel: ViewGroup by lazy { findViewById(R.id.controls) }
+    private val camera: CameraView by lazy { findViewById(R.id.camera) as CameraView }
+    private val controlPanel: ViewGroup by lazy { findViewById(R.id.controls) as ViewGroup }
     private var captureTime: Long = 0
 
     private var currentFilter = 0
