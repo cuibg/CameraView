@@ -7,6 +7,8 @@ import androidx.annotation.VisibleForTesting;
 
 import android.hardware.display.DisplayManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Display;
 import android.view.OrientationEventListener;
 import android.view.Surface;
@@ -27,6 +29,7 @@ public class OrientationHelper {
         void onDisplayOffsetChanged(int displayOffset, boolean willRecreate);
     }
 
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Context mContext;
     private final Callback mCallback;
 
@@ -37,6 +40,8 @@ public class OrientationHelper {
     @VisibleForTesting
     final DisplayManager.DisplayListener mDisplayOffsetListener;
     private int mDisplayOffset = -1;
+    
+    private boolean mEnabled;
 
     /**
      * Creates a new orientation helper.
@@ -97,11 +102,14 @@ public class OrientationHelper {
      * Enables this listener.
      */
     public void enable() {
+        if (mEnabled) return;
+        mEnabled = true;
         mDisplayOffset = findDisplayOffset();
         if (Build.VERSION.SDK_INT >= 17) {
             DisplayManager manager = (DisplayManager)
                     mContext.getSystemService(Context.DISPLAY_SERVICE);
-            manager.registerDisplayListener(mDisplayOffsetListener, null);
+            // Without the handler, this can crash if called from a thread without a looper
+            manager.registerDisplayListener(mDisplayOffsetListener, mHandler);
         }
         mDeviceOrientationListener.enable();
     }
@@ -110,6 +118,8 @@ public class OrientationHelper {
      * Disables this listener.
      */
     public void disable() {
+        if (!mEnabled) return;
+        mEnabled = false;
         mDeviceOrientationListener.disable();
         if (Build.VERSION.SDK_INT >= 17) {
             DisplayManager manager = (DisplayManager)

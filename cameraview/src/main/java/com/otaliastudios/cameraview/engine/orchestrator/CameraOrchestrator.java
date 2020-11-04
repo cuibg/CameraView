@@ -1,12 +1,10 @@
 package com.otaliastudios.cameraview.engine.orchestrator;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.android.gms.tasks.Tasks;
+import com.otaliastudios.cameraview.CameraException;
 import com.otaliastudios.cameraview.CameraLogger;
 import com.otaliastudios.cameraview.internal.WorkerHandler;
 
@@ -18,10 +16,13 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 /**
  * Schedules {@link com.otaliastudios.cameraview.engine.CameraEngine} actions,
  * so that they always run on the same thread.
- *
+ * <p>
  * We need to be extra careful (not as easy as posting on a Handler) because the engine
  * has different states, and some actions will modify the engine state - turn it on or
  * tear it down. Other actions might need a specific state to be executed.
@@ -37,6 +38,7 @@ public class CameraOrchestrator {
     public interface Callback {
         @NonNull
         WorkerHandler getJobWorker(@NonNull String job);
+
         void handleJobException(@NonNull String job, @NonNull Exception exception);
     }
 
@@ -89,41 +91,45 @@ public class CameraOrchestrator {
         synchronized (mLock) {
             applyCompletionListener(mJobs.getLast().task, handler,
                     new OnCompleteListener() {
-                @Override
-                public void onComplete(@NonNull Task task) {
-                    synchronized (mLock) {
-                        mJobs.removeFirst();
-                        ensureToken();
-                    }
-                    try {
-                        LOG.i(name.toUpperCase(), "- Executing.");
-                        Task<T> inner = job.call();
-                        applyCompletionListener(inner, handler, new OnCompleteListener<T>() {
-                            @Override
-                            public void onComplete(@NonNull Task<T> task) {
-                                Exception e = task.getException();
-                                if (e != null) {
-                                    LOG.w(name.toUpperCase(), "- Finished with ERROR.", e);
-                                    if (dispatchExceptions) {
+                        @Override
+                        public void onComplete(@NonNull Task task) {
+                            synchronized (mLock) {
+                                mJobs.removeFirst();
+                                ensureToken();
+                            }
+                            try {
+                                LOG.i(name.toUpperCase(), "- Executing.");
+                                Task<T> inner = job.call();
+                                applyCompletionListener(inner, handler, new OnCompleteListener<T>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<T> task) {
+                                        Exception e = task.getException();
+                                        if (e != null) {
+                                            LOG.w(name.toUpperCase(), "- Finished with ERROR.", e);
+                                            if (dispatchExceptions) {
+                                                mCallback.handleJobException(name, e);
+                                            }
+                                            source.trySetException(e);
+                                        } else if (task.isCanceled()) {
+                                            LOG.i(name.toUpperCase(), "- Finished because ABORTED.");
+                                            source.trySetException(new CancellationException());
+                                        } else {
+                                            LOG.i(name.toUpperCase(), "- Finished.");
+                                            source.trySetResult(task.getResult());
+                                        }
+                                    }
+                                });
+                            } catch (Exception e) {
+                                LOG.i(name.toUpperCase(), "- Finished.", e);
+                                if (dispatchExceptions) {
+                                    if (e instanceof CameraException) {
                                         mCallback.handleJobException(name, e);
                                     }
-                                    source.trySetException(e);
-                                } else if (task.isCanceled()) {
-                                    LOG.i(name.toUpperCase(), "- Finished because ABORTED.");
-                                    source.trySetException(new CancellationException());
-                                } else {
-                                    LOG.i(name.toUpperCase(), "- Finished.");
-                                    source.trySetResult(task.getResult());
                                 }
+                                source.trySetException(e);
                             }
-                        });
-                    } catch (Exception e) {
-                        LOG.i(name.toUpperCase(), "- Finished.", e);
-                        if (dispatchExceptions) mCallback.handleJobException(name, e);
-                        source.trySetException(e);
-                    }
-                }
-            });
+                        }
+                    });
             mJobs.addLast(new Token(name, source.getTask()));
         }
         return source.getTask();
