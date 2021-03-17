@@ -1,7 +1,5 @@
 package com.otaliastudios.cameraview.engine;
 
-import android.graphics.PointF;
-import android.graphics.RectF;
 import android.location.Location;
 
 import androidx.annotation.CallSuper;
@@ -28,7 +26,6 @@ import com.otaliastudios.cameraview.engine.offset.Angles;
 import com.otaliastudios.cameraview.engine.offset.Reference;
 import com.otaliastudios.cameraview.engine.orchestrator.CameraState;
 import com.otaliastudios.cameraview.frame.FrameManager;
-import com.otaliastudios.cameraview.gesture.Gesture;
 import com.otaliastudios.cameraview.overlay.Overlay;
 import com.otaliastudios.cameraview.picture.PictureRecorder;
 import com.otaliastudios.cameraview.preview.CameraPreview;
@@ -49,6 +46,9 @@ import java.util.List;
  * Abstract implementation of {@link CameraEngine} that helps in common tasks.
  */
 public abstract class CameraBaseEngine extends CameraEngine {
+
+    protected final static int ALLOWED_ZOOM_OPS = 20;
+    protected final static int ALLOWED_EV_OPS = 20;
 
     @SuppressWarnings("WeakerAccess") protected CameraPreview mPreview;
     @SuppressWarnings("WeakerAccess") protected CameraOptions mCameraOptions;
@@ -553,7 +553,7 @@ public abstract class CameraBaseEngine extends CameraEngine {
 
     @Override
     public void onPictureShutter(boolean didPlaySound) {
-        getCallback().onShutter(!didPlaySound);
+        getCallback().dispatchOnPictureShutter(!didPlaySound);
     }
 
     @Override

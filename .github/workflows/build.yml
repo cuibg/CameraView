@@ -5,9 +5,8 @@ on:
   push:
     branches:
       - master
+      - main
   pull_request:
-env:
-  TRAVIS: true
 jobs:
   ANDROID_BASE_CHECKS:
     name: Base Checks
