@@ -1,13 +1,10 @@
 package com.otaliastudios.cameraview.engine.orchestrator;
 
-import androidx.annotation.GuardedBy;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.android.gms.tasks.Tasks;
+import com.otaliastudios.cameraview.CameraException;
 import com.otaliastudios.cameraview.CameraLogger;
 import com.otaliastudios.cameraview.internal.WorkerHandler;
 
@@ -20,10 +17,13 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 
+import androidx.annotation.GuardedBy;
+import androidx.annotation.NonNull;
+
 /**
  * Schedules {@link com.otaliastudios.cameraview.engine.CameraEngine} actions,
  * so that they always run on the same thread.
- *
+ * <p>
  * We need to be extra careful (not as easy as posting on a Handler) because the engine
  * has different states, and some actions will modify the engine state - turn it on or
  * tear it down. Other actions might need a specific state to be executed.
@@ -39,6 +39,7 @@ public class CameraOrchestrator {
     public interface Callback {
         @NonNull
         WorkerHandler getJobWorker(@NonNull String job);
+
         void handleJobException(@NonNull String job, @NonNull Exception exception);
     }
 
@@ -175,7 +176,9 @@ public class CameraOrchestrator {
                 } catch (Exception e) {
                     LOG.i(job.name.toUpperCase(), "- Finished with ERROR.", e);
                     if (job.dispatchExceptions) {
-                        mCallback.handleJobException(job.name, e);
+                        if (e instanceof CameraException) {
+                            mCallback.handleJobException(job.name, e);
+                        }
                     }
                     job.source.trySetException(e);
                     synchronized (mJobsLock) {
