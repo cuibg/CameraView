@@ -2,17 +2,14 @@ package com.otaliastudios.cameraview.internal;
 
 import android.content.Context;
 import android.hardware.SensorManager;
-import androidx.annotation.NonNull;
-import androidx.annotation.VisibleForTesting;
-
 import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.Display;
 import android.view.OrientationEventListener;
-import android.view.Surface;
-import android.view.WindowManager;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 /**
  * Helps with keeping track of both device orientation (which changes when device is rotated)
@@ -40,7 +37,7 @@ public class OrientationHelper {
     @VisibleForTesting
     final DisplayManager.DisplayListener mDisplayOffsetListener;
     private int mDisplayOffset = -1;
-    
+
     private boolean mEnabled;
 
     /**
@@ -148,15 +145,16 @@ public class OrientationHelper {
     }
 
     private int findDisplayOffset() {
-        Display display = ((WindowManager) mContext
-                .getSystemService(Context.WINDOW_SERVICE))
-                .getDefaultDisplay();
-        switch (display.getRotation()) {
-            case Surface.ROTATION_0: return 0;
-            case Surface.ROTATION_90: return 90;
-            case Surface.ROTATION_180: return 180;
-            case Surface.ROTATION_270: return 270;
-            default: return 0;
-        }
+        return 90;
+//        Display display = ((WindowManager) mContext
+//                .getSystemService(Context.WINDOW_SERVICE))
+//                .getDefaultDisplay();
+//        switch (display.getRotation()) {
+//            case Surface.ROTATION_0: return 0;
+//            case Surface.ROTATION_90: return 90;
+//            case Surface.ROTATION_180: return 180;
+//            case Surface.ROTATION_270: return 270;
+//            default: return 0;
+//        }
     }
 }
